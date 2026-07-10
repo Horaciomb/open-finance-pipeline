@@ -15,6 +15,9 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from typing import TYPE_CHECKING
 
 import psycopg2
 
@@ -22,10 +25,16 @@ from src.el.extract_fred import extract_fred_series
 from src.el.extract_prices import extract_prices
 from src.el.load import upsert_fred_observations, upsert_prices
 
+if TYPE_CHECKING:
+    from psycopg2.extensions import connection as PgConnection
+
 logger = logging.getLogger(__name__)
 
-DEFAULT_TICKERS = ["^GSPC", "BTC-USD", "CL=F", "GC=F"]
-DEFAULT_SERIES = ["FEDFUNDS", "UNRATE", "CPIAUCSL", "DGS10"]
+# Tuplas, no listas: son los defaults de los parámetros de las funciones de
+# abajo, y una lista mutable como default es un footgun clásico de Python (si
+# algún caller la mutara in-place, el default quedaría corrompido para siempre).
+DEFAULT_TICKERS: tuple[str, ...] = ("^GSPC", "BTC-USD", "CL=F", "GC=F")
+DEFAULT_SERIES: tuple[str, ...] = ("FEDFUNDS", "UNRATE", "CPIAUCSL", "DGS10")
 
 
 def _resolve_database_url(database_url: str | None) -> str:
@@ -37,9 +46,31 @@ def _resolve_database_url(database_url: str | None) -> str:
     return database_url
 
 
+@contextmanager
+def _openfin_raw_connection(database_url: str) -> Iterator[PgConnection]:
+    """Conexión a openfin_raw con commit/rollback/close automáticos.
+
+    Args:
+        database_url: connection string ya resuelta.
+
+    Yields:
+        Conexión psycopg2 con ``search_path=openfin_raw``, lista para usar.
+    """
+    conn = psycopg2.connect(database_url, options="-c search_path=openfin_raw")
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        logger.exception("El pipeline falló; se hizo rollback.")
+        raise
+    finally:
+        conn.close()
+
+
 def run_daily_prices(
     database_url: str | None = None,
-    tickers: list[str] = DEFAULT_TICKERS,
+    tickers: Sequence[str] = DEFAULT_TICKERS,
     period: str = "5d",
 ) -> dict[str, int]:
     """Ejecuta el EL diario de precios: extrae de yfinance y carga en openfin_raw.
@@ -58,16 +89,8 @@ def run_daily_prices(
     observations = extract_prices(tickers, period=period)
     logger.info("%d observaciones de precio extraídas.", len(observations))
 
-    conn = psycopg2.connect(database_url, options="-c search_path=openfin_raw")
-    try:
+    with _openfin_raw_connection(database_url) as conn:
         n_prices = upsert_prices(conn, observations)
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        logger.exception("El pipeline de precios falló; se hizo rollback.")
-        raise
-    finally:
-        conn.close()
 
     result = {"prices": n_prices}
     logger.info("Pipeline de precios completado: %s", result)
@@ -76,7 +99,7 @@ def run_daily_prices(
 
 def run_weekly_fred(
     database_url: str | None = None,
-    series_ids: list[str] = DEFAULT_SERIES,
+    series_ids: Sequence[str] = DEFAULT_SERIES,
     observation_start: str | None = None,
 ) -> dict[str, int]:
     """Ejecuta el EL semanal de FRED: extrae de la API y carga en openfin_raw.
@@ -99,16 +122,8 @@ def run_weekly_fred(
         )
     logger.info("%d observaciones FRED extraídas.", len(observations))
 
-    conn = psycopg2.connect(database_url, options="-c search_path=openfin_raw")
-    try:
+    with _openfin_raw_connection(database_url) as conn:
         n_fred = upsert_fred_observations(conn, observations)
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        logger.exception("El pipeline de FRED falló; se hizo rollback.")
-        raise
-    finally:
-        conn.close()
 
     result = {"fred_observations": n_fred}
     logger.info("Pipeline de FRED completado: %s", result)

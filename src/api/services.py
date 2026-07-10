@@ -39,6 +39,36 @@ def get_price_series(
         return cur.fetchall()
 
 
+def ticker_exists(ticker: str) -> bool:
+    """Indica si un ticker está catalogado (de dim_asset).
+
+    Se usa para distinguir "ticker desconocido" de "ticker válido sin datos
+    en el rango de fechas pedido" en /prices/{ticker}.
+
+    Args:
+        ticker: símbolo a comprobar.
+
+    Returns:
+        True si el ticker existe en dim_asset, independientemente del rango.
+    """
+    with get_cursor() as cur:
+        cur.execute("SELECT 1 FROM dim_asset WHERE ticker = %(ticker)s", {"ticker": ticker})
+        return cur.fetchone() is not None
+
+
+def _fetch_latest_prices(cur) -> list[dict]:
+    cur.execute(
+        """
+        SELECT metric_key AS ticker, metric_label AS display_name,
+               fecha, value AS close, unit
+        FROM mart_market_overview
+        WHERE metric_type = 'price'
+        ORDER BY metric_key
+        """
+    )
+    return cur.fetchall()
+
+
 def get_latest_prices() -> list[dict]:
     """Último precio de cada activo trackeado (de mart_market_overview).
 
@@ -46,16 +76,7 @@ def get_latest_prices() -> list[dict]:
         Un registro por activo, ordenado por ticker.
     """
     with get_cursor() as cur:
-        cur.execute(
-            """
-            SELECT metric_key AS ticker, metric_label AS display_name,
-                   fecha, value AS close, unit
-            FROM mart_market_overview
-            WHERE metric_type = 'price'
-            ORDER BY metric_key
-            """
-        )
-        return cur.fetchall()
+        return _fetch_latest_prices(cur)
 
 
 def get_macro_series(series_id: str) -> list[dict]:
@@ -80,6 +101,19 @@ def get_macro_series(series_id: str) -> list[dict]:
         return cur.fetchall()
 
 
+def _fetch_latest_macro(cur) -> list[dict]:
+    cur.execute(
+        """
+        SELECT metric_key AS series_id, metric_label AS display_name,
+               fecha, value AS valor, unit
+        FROM mart_market_overview
+        WHERE metric_type = 'macro'
+        ORDER BY metric_key
+        """
+    )
+    return cur.fetchall()
+
+
 def get_latest_macro() -> list[dict]:
     """Último valor de cada indicador macro (de mart_market_overview).
 
@@ -87,34 +121,18 @@ def get_latest_macro() -> list[dict]:
         Un registro por indicador, ordenado por series_id.
     """
     with get_cursor() as cur:
-        cur.execute(
-            """
-            SELECT metric_key AS series_id, metric_label AS display_name,
-                   fecha, value AS valor, unit
-            FROM mart_market_overview
-            WHERE metric_type = 'macro'
-            ORDER BY metric_key
-            """
-        )
-        return cur.fetchall()
+        return _fetch_latest_macro(cur)
 
 
-def get_latest_fx() -> dict:
-    """Última brecha cambiaria de Bolivia (de mart_market_overview).
-
-    Returns:
-        Dict con ``oficial``, ``binance`` (cada uno ``{fecha, value}`` o
-        ``None`` si aún no hay dato) y ``brecha_pct``.
-    """
-    with get_cursor() as cur:
-        cur.execute(
-            """
-            SELECT metric_key, fecha, value, secondary_value
-            FROM mart_market_overview
-            WHERE metric_type = 'fx'
-            """
-        )
-        rows = {r["metric_key"]: r for r in cur.fetchall()}
+def _fetch_latest_fx(cur) -> dict:
+    cur.execute(
+        """
+        SELECT metric_key, fecha, value, secondary_value
+        FROM mart_market_overview
+        WHERE metric_type = 'fx'
+        """
+    )
+    rows = {r["metric_key"]: r for r in cur.fetchall()}
 
     oficial = rows.get("oficial")
     binance = rows.get("binance")
@@ -125,14 +143,32 @@ def get_latest_fx() -> dict:
     }
 
 
+def get_latest_fx() -> dict:
+    """Última brecha cambiaria de Bolivia (de mart_market_overview).
+
+    Returns:
+        Dict con ``oficial``, ``binance`` (cada uno ``{fecha, value}`` o
+        ``None`` si aún no hay dato) y ``brecha_pct``.
+    """
+    with get_cursor() as cur:
+        return _fetch_latest_fx(cur)
+
+
 def get_overview() -> dict:
     """Snapshot combinado para el dashboard: precios, macro y brecha FX.
+
+    Las tres consultas comparten una única transacción REPEATABLE READ, para
+    que un `dbt build` concurrente (que recrea mart_market_overview como
+    tabla) no pueda hacer que la respuesta mezcle datos de antes y después
+    del refresh.
 
     Returns:
         Dict con las claves ``prices``, ``macro`` y ``fx``.
     """
-    return {
-        "prices": get_latest_prices(),
-        "macro": get_latest_macro(),
-        "fx": get_latest_fx(),
-    }
+    with get_cursor() as cur:
+        cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        return {
+            "prices": _fetch_latest_prices(cur),
+            "macro": _fetch_latest_macro(cur),
+            "fx": _fetch_latest_fx(cur),
+        }

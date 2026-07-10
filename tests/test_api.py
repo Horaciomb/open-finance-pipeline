@@ -87,10 +87,24 @@ def test_get_price_series_ok(client):
     assert resp.json()[0]["close"] == 1.5
 
 
-def test_get_price_series_not_found(client):
-    with patch("src.api.routers.prices.services.get_price_series", return_value=[]):
+def test_get_price_series_unknown_ticker_is_404(client):
+    with (
+        patch("src.api.routers.prices.services.get_price_series", return_value=[]),
+        patch("src.api.routers.prices.services.ticker_exists", return_value=False),
+    ):
         resp = client.get("/prices/UNKNOWN")
     assert resp.status_code == 404
+
+
+def test_get_price_series_known_ticker_empty_range_is_200(client):
+    """Un ticker válido sin filas en el rango pedido no es un 404."""
+    with (
+        patch("src.api.routers.prices.services.get_price_series", return_value=[]),
+        patch("src.api.routers.prices.services.ticker_exists", return_value=True),
+    ):
+        resp = client.get("/prices/%5EGSPC", params={"desde": "2099-01-01"})
+    assert resp.status_code == 200
+    assert resp.json() == []
 
 
 # --- macro ----------------------------------------------------------------------

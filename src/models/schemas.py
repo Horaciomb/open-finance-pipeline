@@ -1,5 +1,6 @@
 """Modelos pydantic para validar datos extraídos antes de cargarlos a Bronze."""
 
+import math
 from datetime import date
 
 from pydantic import BaseModel, field_validator
@@ -15,6 +16,13 @@ class PriceObservation(BaseModel):
     low: float
     close: float
     volume: int
+
+    @field_validator("open", "high", "low", "close")
+    @classmethod
+    def reject_nan(cls, v: float) -> float:
+        if math.isnan(v):
+            raise ValueError("El valor OHLC no puede ser NaN.")
+        return v
 
 
 class FredObservation(BaseModel):
