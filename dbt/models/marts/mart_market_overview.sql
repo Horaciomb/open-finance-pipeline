@@ -36,54 +36,47 @@ latest_macro as (
 
 ),
 
--- casa es una fila en el origen ('oficial'/'binance'), no una columna. Las dos
--- casas no siempre cotizan el mismo día (ej. binance reportó 2026-07-09 pero
--- oficial no), así que el "último valor" de cada una se calcula de forma
--- independiente, no sobre una fecha compartida.
-fx_oficial_ranked as (
+-- casa es una fila en el origen ('oficial', 'binance', ...), no una columna,
+-- y las distintas casas no siempre cotizan el mismo día. Se rankea por casa
+-- en una sola pasada (partition by casa) en vez de duplicar la lógica de
+-- "último valor" una vez por cada casa conocida — así una casa nueva que
+-- agregue el proyecto hermano aparece automáticamente, sin tocar este modelo.
+fx_ranked as (
 
     select
-        fecha,
-        venta as value,
-        row_number() over (order by fecha desc) as rn
-    from {{ ref('stg_fx_rates') }}
-    where casa = 'oficial' and venta is not null
-
-),
-
-fx_binance_ranked as (
-
-    select
+        casa,
         fecha,
         venta as value,
         brecha_pct as secondary_value,
-        row_number() over (order by fecha desc) as rn
+        row_number() over (partition by casa order by fecha desc) as rn
     from {{ ref('stg_fx_rates') }}
-    where casa = 'binance' and venta is not null
+    where venta is not null
 
 ),
 
-fx_oficial_latest as (
-    select fecha, value from fx_oficial_ranked where rn = 1
-),
-
-fx_binance_latest as (
-    select fecha, value, secondary_value from fx_binance_ranked where rn = 1
+fx_latest as (
+    select casa, fecha, value, secondary_value
+    from fx_ranked
+    where rn = 1
 ),
 
 fx_rows as (
 
     select
-        'fx' as metric_type, 'oficial' as metric_key, 'Dólar oficial (Bolivia)' as metric_label,
-        fecha, value, null::numeric as secondary_value, 'BOB' as unit
-    from fx_oficial_latest
-
-    union all
-
-    select
-        'fx', 'binance', 'Dólar paralelo / Binance (Bolivia)',
-        fecha, value, secondary_value, 'BOB'
-    from fx_binance_latest
+        'fx' as metric_type,
+        casa as metric_key,
+        -- Etiquetas conocidas para las casas actuales; una casa nueva no
+        -- catalogada cae en un label genérico en vez de desaparecer.
+        case casa
+            when 'oficial' then 'Dólar oficial (Bolivia)'
+            when 'binance' then 'Dólar paralelo / Binance (Bolivia)'
+            else initcap(casa) || ' (Bolivia)'
+        end as metric_label,
+        fecha,
+        value,
+        secondary_value,
+        'BOB' as unit
+    from fx_latest
 
 )
 
