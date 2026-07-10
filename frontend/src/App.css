@@ -1,0 +1,86 @@
+.dashboard {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  text-align: left;
+}
+
+header {
+  margin-bottom: 1.5rem;
+}
+
+.subtitle {
+  color: var(--muted, #888);
+  margin-top: 0.25rem;
+}
+
+.status {
+  padding: 2rem;
+  text-align: center;
+}
+
+.card {
+  background: var(--card-bg, #1a1a1a10);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.metric-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0.25rem 0;
+}
+
+.metric-unit {
+  font-size: 1rem;
+  font-weight: 400;
+  margin-left: 0.35rem;
+  color: var(--muted, #888);
+}
+
+.metric-date {
+  font-size: 0.85rem;
+  color: var(--muted, #888);
+  margin: 0;
+}
+
+.fx-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+  background: var(--card-bg, #1a1a1a10);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.fx-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted, #888);
+}
+
+.fx-value {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.fx-gap .fx-value {
+  color: #e08a3c;
+}
