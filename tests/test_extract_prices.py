@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 
 from src.el.extract_prices import extract_prices
@@ -42,3 +44,27 @@ def test_extract_prices_skips_empty_history(mocker):
     result = extract_prices(["FAKE"], period="5d")
 
     assert result == []
+
+
+def test_extract_prices_skips_rows_with_nan_without_crashing(mocker):
+    """Una fila con NaN (yfinance en tickers ilíquidos) no debe abortar el batch."""
+    index = pd.to_datetime(["2024-01-02", "2024-01-03"])
+    history = pd.DataFrame(
+        {
+            "Open": [100.0, math.nan],
+            "High": [102.0, 103.0],
+            "Low": [99.0, 100.0],
+            "Close": [101.0, 102.0],
+            "Volume": [1000, math.nan],
+        },
+        index=index,
+    )
+    mocker.patch(
+        "src.el.extract_prices.yf.Ticker",
+        return_value=mocker.Mock(history=mocker.Mock(return_value=history)),
+    )
+
+    result = extract_prices(["CL=F"], period="5d")
+
+    assert len(result) == 1
+    assert result[0].fecha.isoformat() == "2024-01-02"

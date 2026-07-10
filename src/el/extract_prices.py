@@ -32,6 +32,11 @@ def extract_prices(tickers: list[str], period: str = "5d") -> list[PriceObservat
             logger.warning("yfinance devolvió historial vacío para %s", ticker)
             continue
         for idx, row in history.iterrows():
+            if row[["Open", "High", "Low", "Close", "Volume"]].isna().any():
+                logger.warning(
+                    "Fila con valores NaN para %s en %s; se omite.", ticker, idx.date()
+                )
+                continue
             observations.append(
                 PriceObservation(
                     ticker=ticker,
