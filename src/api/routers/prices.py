@@ -22,8 +22,13 @@ def get_latest_prices() -> list[dict]:
 def get_price_series(
     ticker: str, desde: date | None = None, hasta: date | None = None
 ) -> list[dict]:
-    """Serie histórica OHLCV de un ticker."""
+    """Serie histórica OHLCV de un ticker.
+
+    Un ticker desconocido responde 404. Un ticker válido sin datos en el
+    rango pedido responde 200 con una lista vacía (no es lo mismo que "no
+    existe").
+    """
     rows = services.get_price_series(ticker, desde=desde, hasta=hasta)
-    if not rows:
-        raise HTTPException(status_code=404, detail=f"Sin datos para el ticker '{ticker}'.")
+    if not rows and not services.ticker_exists(ticker):
+        raise HTTPException(status_code=404, detail=f"Ticker '{ticker}' no encontrado.")
     return rows

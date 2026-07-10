@@ -39,6 +39,23 @@ def get_price_series(
         return cur.fetchall()
 
 
+def ticker_exists(ticker: str) -> bool:
+    """Indica si un ticker está catalogado (de dim_asset).
+
+    Se usa para distinguir "ticker desconocido" de "ticker válido sin datos
+    en el rango de fechas pedido" en /prices/{ticker}.
+
+    Args:
+        ticker: símbolo a comprobar.
+
+    Returns:
+        True si el ticker existe en dim_asset, independientemente del rango.
+    """
+    with get_cursor() as cur:
+        cur.execute("SELECT 1 FROM dim_asset WHERE ticker = %(ticker)s", {"ticker": ticker})
+        return cur.fetchone() is not None
+
+
 def get_latest_prices() -> list[dict]:
     """Último precio de cada activo trackeado (de mart_market_overview).
 
