@@ -1,6 +1,7 @@
 """Extracción de precios diarios OHLCV desde Yahoo Finance (yfinance)."""
 
 import logging
+from collections.abc import Sequence
 
 import yfinance as yf
 
@@ -15,7 +16,7 @@ def _fetch_history(ticker: str, period: str):
     return yf.Ticker(ticker).history(period=period)
 
 
-def extract_prices(tickers: list[str], period: str = "5d") -> list[PriceObservation]:
+def extract_prices(tickers: Sequence[str], period: str = "5d") -> list[PriceObservation]:
     """Extrae observaciones OHLCV diarias para una lista de tickers de Yahoo Finance.
 
     Args:
