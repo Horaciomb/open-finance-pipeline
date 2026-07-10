@@ -1,0 +1,20 @@
+version: 2
+
+seeds:
+  - name: asset_catalog
+    description: Catálogo de activos trackeados (tipo y nombre legible por ticker).
+    columns:
+      - name: ticker
+        tests:
+          - unique
+          - not_null
+      - name: asset_type
+        description: 'equity_index, crypto o commodity.'
+
+  - name: indicator_catalog
+    description: Catálogo de series FRED trackeadas (nombre legible y unidad).
+    columns:
+      - name: series_id
+        tests:
+          - unique
+          - not_null
