@@ -1,0 +1,30 @@
+name: "open_finance_pipeline"
+version: "1.0.0"
+config-version: 2
+
+# Perfil definido en profiles.yml (lee credenciales de variables de entorno PG*).
+profile: "open_finance_pipeline"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Todos los modelos viven en el esquema `openfin` (ver macros/generate_schema_name.sql).
+# staging (Silver) => views (ligeras, siempre frescas); marts (Gold) => tables (rápidas de leer).
+models:
+  open_finance_pipeline:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+
+# Los seeds de catálogo (assets/indicadores) también van al esquema openfin.
+seeds:
+  open_finance_pipeline:
+    +schema: openfin
