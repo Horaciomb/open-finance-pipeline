@@ -1,0 +1,13 @@
+.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+dist/
+target/
+dbt_packages/
+logs/
+*.log
+.DS_Store
