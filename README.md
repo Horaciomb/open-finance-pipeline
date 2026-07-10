@@ -118,6 +118,11 @@ fecha compartida — un caso real encontrado y corregido durante el desarrollo.
 python -m venv venv
 source venv/Scripts/activate    # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+# En Python 3.14, aplicar el override de mashumaro como paso SEPARADO (dbt-core
+# fija mashumaro<3.15 y eso rompe en 3.14; ver el comentario en requirements.txt
+# sobre por qué no puede ir en la misma instalación).
+pip install --upgrade "mashumaro>=3.18,<4.0"
 ```
 
 ### 3. Configurar entorno
@@ -202,9 +207,16 @@ fuerza `not_null` en `valor` por la misma razón.
 
 ### 5. Compatibilidad dbt-core + Python 3.14
 `dbt-core` fija `mashumaro<3.15`, pero ese rango falla en Python 3.14
-(`UnserializableField` al construir el JSON schema de `dbt_common`). Se fija
-`mashumaro>=3.18` en `requirements.txt` — confirmado compatible con un `dbt
-build` real contra Supabase.
+(`UnserializableField` al construir el JSON schema de `dbt_common`).
+`dbt-core`/`dbt-postgres` quedan **pineados a versiones exactas** (no `>=`) en
+`requirements.txt` para que un `pip install` futuro no arrastre silenciosamente
+un release con un tope de mashumaro distinto. El override de mashumaro
+(`>=3.18,<4.0`) **no puede vivir en el mismo `requirements.txt`** — el propio
+`dbt-core` declara `mashumaro<3.15`, así que pedirle a pip resolver ambas
+restricciones en una sola pasada falla con `ResolutionImpossible` (se comprobó
+con una instalación limpia). Por eso el override se aplica como un
+**segundo paso de `pip install --upgrade`** después de `pip install -r
+requirements.txt`, tanto en local (ver Setup) como en los 4 workflows de CI.
 
 ### 6. CORS solo en este proyecto
 A diferencia de los proyectos hermanos (sin frontend), este API habilita CORS
