@@ -1,4 +1,4 @@
-name: Pipeline diario (precios)
+name: Pipeline diario (precios + dbt)
 
 on:
   schedule:
@@ -7,8 +7,8 @@ on:
   workflow_dispatch: {}  # permite ejecutarlo a mano
 
 jobs:
-  el-prices:
-    name: EL Python — precios (yfinance)
+  el-prices-and-transform:
+    name: EL Python (precios) + dbt build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,3 +25,16 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python -m src.el.pipeline prices
+
+      - name: Derivar variables PG* desde DATABASE_URL
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/parse_database_url.py >> "$GITHUB_ENV"
+
+      - name: dbt deps
+        working-directory: dbt
+        run: dbt deps
+
+      - name: dbt build (refresca los marts Gold con los precios del día)
+        working-directory: dbt
+        run: dbt build
