@@ -1,0 +1,110 @@
+version: 2
+
+sources:
+  - name: openfin_raw
+    description: >
+      Landing zone (Bronze) cargada por el EL de Python desde Yahoo Finance
+      (yfinance) y la API de FRED. Datos crudos, sin transformar.
+    schema: openfin_raw
+    tables:
+      - name: prices
+        description: >
+          Precios OHLCV diarios crudos de Yahoo Finance. Grano: ticker × fecha.
+        columns:
+          - name: ticker
+            description: Símbolo de Yahoo Finance (ej. '^GSPC', 'BTC-USD').
+          - name: fecha
+            description: Fecha de la observación.
+          - name: open
+            description: Precio de apertura.
+          - name: high
+            description: Precio máximo del día.
+          - name: low
+            description: Precio mínimo del día.
+          - name: close
+            description: Precio de cierre.
+          - name: volume
+            description: Volumen negociado.
+          - name: ingested_at
+            description: Timestamp de carga del registro.
+      - name: fred_observations
+        description: >
+          Observaciones crudas de series macro de FRED. Grano: series_id × fecha.
+          Incluye filas con valor nulo (feriados o series no publicadas aún);
+          el descarte, si aplica, se hace en los marts, no aquí.
+        columns:
+          - name: series_id
+            description: Código de la serie FRED (ej. 'FEDFUNDS').
+          - name: fecha
+            description: Fecha de la observación.
+          - name: valor
+            description: Valor de la observación; puede ser nulo.
+          - name: ingested_at
+            description: Timestamp de carga del registro.
+
+  - name: fx
+    description: >
+      Esquema del proyecto hermano "Bolivia Exchange Rate Tracker" (Proyecto 1
+      del portafolio). Este proyecto SOLO LEE de aquí vía source() — nunca
+      escribe ni re-extrae este dato.
+    schema: fx
+    tables:
+      - name: exchange_rates
+        description: >
+          Tipo de cambio boliviano por casa de cambio y fecha. La brecha
+          cambiaria (oficial vs. paralelo) está codificada como filas distintas
+          por el valor de `casa` ('oficial', 'binance'), no como columnas.
+        columns:
+          - name: fecha
+            description: Fecha de la cotización.
+          - name: casa
+            description: Fuente de la cotización ('oficial' o 'binance').
+          - name: compra
+            description: Precio de compra.
+          - name: venta
+            description: Precio de venta.
+          - name: brecha_pct
+            description: Brecha % vs. oficial; poblada solo en la fila 'binance'.
+          - name: imputado
+            description: Indica si el valor fue imputado en vez de sourceado en vivo.
+
+models:
+  - name: stg_prices
+    description: Precios OHLCV limpios y tipados. Grano ticker × fecha.
+    columns:
+      - name: ticker
+        tests:
+          - not_null
+      - name: fecha
+        tests:
+          - not_null
+      - name: close
+        tests:
+          - not_null
+
+  - name: stg_fred_observations
+    description: >
+      Observaciones FRED tipadas. Conserva los valores nulos (huecos reales
+      de la fuente); no se descartan en esta capa.
+    columns:
+      - name: series_id
+        tests:
+          - not_null
+      - name: fecha
+        tests:
+          - not_null
+
+  - name: stg_fx_rates
+    description: >
+      Tipo de cambio boliviano, reutilizado del proyecto hermano vía source()
+      cross-schema. Solo lectura.
+    columns:
+      - name: fecha
+        tests:
+          - not_null
+      - name: casa
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["oficial", "binance"]

@@ -1,0 +1,5 @@
+series_id,display_name,unit
+FEDFUNDS,Tasa de fondos federales,%
+UNRATE,Desempleo EE.UU.,%
+CPIAUCSL,Índice de precios al consumidor,index
+DGS10,Bono del tesoro a 10 años,%

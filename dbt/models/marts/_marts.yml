@@ -1,0 +1,96 @@
+version: 2
+
+models:
+  - name: dim_asset
+    description: >
+      Catálogo de activos trackeados (equity_index, crypto, commodity), un
+      registro por ticker visto en stg_prices.
+    columns:
+      - name: ticker
+        tests:
+          - unique
+          - not_null
+      - name: asset_type
+        description: 'equity_index, crypto, commodity o unknown si no está catalogado.'
+
+  - name: dim_indicator
+    description: >
+      Catálogo de series FRED trackeadas, un registro por series_id visto en
+      stg_fred_observations.
+    columns:
+      - name: series_id
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_daily_prices
+    description: Hecho de precios diarios OHLCV. Grano ticker × fecha.
+    columns:
+      - name: price_key
+        description: Surrogate key (ticker, fecha).
+        tests:
+          - unique
+          - not_null
+      - name: ticker
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_asset')
+                field: ticker
+      - name: fecha
+        tests:
+          - not_null
+
+  - name: fct_macro_indicators
+    description: >
+      Hecho de indicadores macro FRED. Grano series_id × fecha. `valor` puede
+      ser nulo (huecos reales de la fuente); no se testea not_null.
+    columns:
+      - name: indicator_key
+        description: Surrogate key (series_id, fecha).
+        tests:
+          - unique
+          - not_null
+      - name: series_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_indicator')
+                field: series_id
+      - name: fecha
+        tests:
+          - not_null
+
+  - name: mart_market_overview
+    description: >
+      Snapshot diario combinado: último precio por activo, último valor por
+      indicador macro, y la brecha cambiaria de Bolivia (oficial vs. paralelo,
+      leída de fx.exchange_rates vía stg_fx_rates). Formato largo/tidy,
+      una fila por metric_type × metric_key. Tabla que alimenta el dashboard
+      principal (/overview del API).
+    columns:
+      - name: metric_type
+        description: "'price', 'macro' o 'fx'."
+        tests:
+          - not_null
+      - name: metric_key
+        description: Identificador de la métrica (ticker, series_id, o 'oficial'/'binance').
+        tests:
+          - not_null
+      - name: fecha
+        tests:
+          - not_null
+      - name: value
+        description: Valor principal de la métrica.
+        tests:
+          - not_null
+      - name: secondary_value
+        description: Valor secundario; solo poblado en la fila fx/binance (brecha_pct).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - metric_type
+              - metric_key

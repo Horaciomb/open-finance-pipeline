@@ -1,0 +1,5 @@
+ticker,asset_type,display_name
+^GSPC,equity_index,S&P 500
+BTC-USD,crypto,Bitcoin
+CL=F,commodity,Petróleo WTI
+GC=F,commodity,Oro
