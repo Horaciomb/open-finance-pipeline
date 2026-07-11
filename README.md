@@ -168,6 +168,38 @@ npm install
 npm run dev            # http://localhost:5173
 ```
 
+### 9. Desplegar el API en Render (free tier)
+
+El repo incluye un [Blueprint](render.yaml) (`render.yaml`) que Render detecta
+automáticamente — no hace falta configurar build/start command a mano.
+
+1. Entrar a [Render](https://dashboard.render.com/) → **New +** → **Blueprint**.
+2. Conectar el repo `Horaciomb/open-finance-pipeline`, rama `main`.
+3. Render lee `render.yaml` y muestra el servicio `open-finance-pipeline-api`.
+   Al pedir `DATABASE_URL` (marcada como secreto, no está en el repo), pegar
+   la connection string real (la del pooler Supabase, puerto 5432).
+   `CORS_EXTRA_ORIGIN` y `DASHBOARD_URL` se pueden dejar vacías por ahora y
+   completarse después de desplegar el frontend (paso 10).
+4. **Apply** → Render instala `requirements.txt` y arranca con
+   `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`.
+5. Verificar `https://<tu-servicio>.onrender.com/health` una vez desplegado.
+
+> Nota: el plan free de Render duerme el servicio tras 15 min de inactividad;
+> el primer request tras un tiempo de inactividad puede tardar ~30-50s en
+> responder (cold start).
+
+### 10. Desplegar el dashboard en Vercel
+
+1. Entrar a [Vercel](https://vercel.com/new) → importar el repo
+   `Horaciomb/open-finance-pipeline`.
+2. **Root Directory:** `frontend` (Vercel detecta Vite automáticamente —
+   build command `npm run build`, output `dist`).
+3. Variable de entorno: `VITE_API_URL` = la URL de Render del paso 9
+   (ej. `https://open-finance-pipeline-api.onrender.com`).
+4. Deploy. Una vez tengas la URL de Vercel, volver a Render y setear
+   `CORS_EXTRA_ORIGIN` con esa URL (paso 9.3) para que el API acepte
+   requests del dashboard en producción.
+
 ---
 
 ## Tests y calidad

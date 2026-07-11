@@ -1,0 +1,36 @@
+# Render Blueprint — despliegue del API (FastAPI) en el plan free.
+# Uso: en el dashboard de Render, "New +" -> "Blueprint" -> conectar este repo.
+# Render detecta este archivo automáticamente. DATABASE_URL y CORS_EXTRA_ORIGIN
+# quedan `sync: false`: Render las pide al crear el Blueprint y NUNCA se
+# commitean (secretos reales, ver .env.example). FRED_API_KEY NO va acá: el
+# API sólo lee de la base, nunca llama a FRED (eso lo hace el EL de Python vía
+# GitHub Actions).
+#
+# La transformación (dbt) y la carga (EL) NO corren acá — son responsabilidad
+# de los workflows de GitHub Actions (pipeline-daily.yml / pipeline-weekly.yml).
+# Este servicio sólo LEE de los marts en el esquema `openfin` para servir el API.
+
+services:
+  - type: web
+    name: open-finance-pipeline-api
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.2
+      - key: DATABASE_URL
+        sync: false
+      - key: DBT_DOCS_URL
+        value: https://horaciomb.github.io/open-finance-pipeline/
+      - key: DASHBOARD_URL
+        sync: false
+      # Origen del dashboard en Vercel, una vez desplegado (ver frontend/).
+      # localhost:5173 ya está permitido en src/api/main.py sin necesidad de
+      # esta variable; esto sólo agrega el origen de producción.
+      - key: CORS_EXTRA_ORIGIN
+        sync: false
