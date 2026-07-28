@@ -21,7 +21,7 @@ hermano), transformados con **dbt** y expuestos vía **API REST (FastAPI)** y un
 
 🚀 **API en vivo:** https://open-finance-pipeline-api.onrender.com/docs
 📊 **Documentación dbt (lineage + catálogo):** https://horaciomb.github.io/open-finance-pipeline/
-🖥️ **Dashboard:** _(pendiente de deploy en Vercel)_
+🖥️ **Dashboard:** https://open-finance-pipeline.vercel.app
 
 ---
 
