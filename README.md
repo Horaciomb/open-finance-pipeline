@@ -19,7 +19,7 @@ hermano), transformados con **dbt** y expuestos vía **API REST (FastAPI)** y un
 > [Bolivia Exchange Rate Tracker](https://github.com/Horaciomb/bolivia-exchange-tracker),
 > y añade una arquitectura Medallion explícita más un frontend de visualización.
 
-🚀 **API en vivo:** _(pendiente de deploy — se agregará el link tras publicar en Render)_
+🚀 **API en vivo:** https://open-finance-pipeline-api.onrender.com/docs
 📊 **Documentación dbt (lineage + catálogo):** https://horaciomb.github.io/open-finance-pipeline/
 🖥️ **Dashboard:** _(pendiente de deploy en Vercel)_
 
