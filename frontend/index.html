@@ -1,13 +1,117 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Open Finance Pipeline</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>Open Finance Pipeline — Dashboard de arquitectura Medallion</title>
+    <meta
+      name="description"
+      content="Dashboard de un pipeline de datos con arquitectura Medallion (Bronze → Silver → Gold): precios de mercado de Yahoo Finance, indicadores macro de la FRED y la brecha cambiaria de Bolivia, transformados con dbt y servidos por una API FastAPI."
+    />
+    <meta name="author" content="Horacio Molina" />
+    <link rel="canonical" href="https://open-finance-pipeline.vercel.app/" />
+    <meta name="theme-color" content="#16171d" />
+
+    <!-- Open Graph: la tarjeta que renderizan LinkedIn, WhatsApp, Slack y Facebook
+         al pegar el link. og:image debe ser una URL absoluta: los crawlers no
+         resuelven rutas relativas. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Open Finance Pipeline" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:url" content="https://open-finance-pipeline.vercel.app/" />
+    <meta
+      property="og:title"
+      content="Open Finance Pipeline — Dashboard de arquitectura Medallion"
+    />
+    <meta
+      property="og:description"
+      content="Pipeline de datos financieros de punta a punta: EL en Python, transformación con dbt en capas Bronze → Silver → Gold sobre PostgreSQL, API FastAPI y este dashboard en React. Combina Yahoo Finance, la FRED y la brecha cambiaria de Bolivia."
+    />
+    <meta
+      property="og:image"
+      content="https://open-finance-pipeline.vercel.app/og-image.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Tarjeta del proyecto Open Finance Pipeline con las tres capas Medallion: Bronze, Silver y Gold."
+    />
+
+    <!-- Twitter/X usa su propio namespace; sin esto degrada a una tarjeta chica. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Open Finance Pipeline — Dashboard de arquitectura Medallion"
+    />
+    <meta
+      name="twitter:description"
+      content="Pipeline de datos financieros de punta a punta: EL en Python, dbt (Bronze → Silver → Gold), API FastAPI y dashboard React."
+    />
+    <meta
+      name="twitter:image"
+      content="https://open-finance-pipeline.vercel.app/og-image.png"
+    />
+
+    <!-- Datos estructurados: le da a los buscadores el contexto que el SPA no
+         expone en el HTML inicial (el <div id="root"> se llena en cliente). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Open Finance Pipeline",
+        "url": "https://open-finance-pipeline.vercel.app/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "es",
+        "author": {
+          "@type": "Person",
+          "name": "Horacio Molina"
+        },
+        "description": "Dashboard de un pipeline de datos con arquitectura Medallion (Bronze, Silver, Gold) que combina precios de mercado de Yahoo Finance, indicadores macroeconómicos de la Reserva Federal (FRED) y la brecha cambiaria de Bolivia.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Contenido de respaldo: sin JavaScript el SPA queda en blanco. Esto deja
+         al menos la descripción del proyecto y los enlaces visibles. -->
+    <noscript>
+      <h1>Open Finance Pipeline</h1>
+      <p>
+        Dashboard de un pipeline de datos con arquitectura Medallion
+        (Bronze → Silver → Gold): precios de mercado (Yahoo Finance),
+        indicadores macroeconómicos de EE.UU. (FRED) y la brecha cambiaria de
+        Bolivia, transformados con dbt y expuestos por una API FastAPI.
+      </p>
+      <p>Este dashboard necesita JavaScript. Mientras tanto:</p>
+      <ul>
+        <li>
+          <a href="https://open-finance-pipeline-api.onrender.com/docs">
+            API REST (documentación Swagger)
+          </a>
+        </li>
+        <li>
+          <a href="https://horaciomb.github.io/open-finance-pipeline/">
+            Documentación de dbt (lineage y catálogo de modelos)
+          </a>
+        </li>
+        <li>
+          <a href="https://github.com/Horaciomb/open-finance-pipeline">
+            Código fuente en GitHub
+          </a>
+        </li>
+      </ul>
+    </noscript>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
